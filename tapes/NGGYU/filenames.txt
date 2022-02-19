@@ -1,4 +1,4 @@
 {
-NGGYU_Colour.rtv,
-NGGYU_Mono.dfpwm
+"NGGYU_Colour.rtv",
+"NGGYU_Mono.dfpwm"
 }
