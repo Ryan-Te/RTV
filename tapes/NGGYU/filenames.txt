@@ -1,2 +1,2 @@
 NGGYU_Colour.rtv
-mono.dfpwm
+NGGYU_Mono.dfpwm
