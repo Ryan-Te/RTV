@@ -1,35 +1,38 @@
 --RTV Server 0.1.0
-local modem = peripheral.wrap("back")
-local speaker = peripheral.wrap("right")
+local modem = peripheral.find("modem")
+local speaker = peripheral.find("speaker")
 local dfpwm = require("cc.audio.dfpwm")
 local decoder = dfpwm.make_decoder()
 print("RTV Broadcaster")
 while true do
-    print("Please Insert a disk")
-    os.pullEvent("disk")
-    print("mono (m) or stereo (s) ?")
-    local ms = read()
-    local mono = false
-    if ms == "m" then mono = true end
-    local frame = 1
-    local moreAudio = true
+    for v in io.lines("/shows.txt") do
+    local resp = http.get(v.."/filenames.txt")
+    local num, code = resp.getResponseCode()
+    print(num.." "..code)
+    if num == 200 then
+    local inf = resp.readAll()
+    local info = textutils.unserialise(inf)
+    resp.close()
+    if type(info) == "table" then
     
     local al = 0
     local ar = 0
     local video = 0
-    if mono then
-        local fh = fs.open("/disk/1/mono.dfpwm", "rb")
+    local mono = false
+    if #info == 2 then
+        mono = true
+        local fh = http.get(v.."/"..info[2], nil, true)
         al = fh.readAll()
         fh.close()
-    else
-        local fh = fs.open("/disk/1/left.dfpwm", "rb")
+    elseif #info >= 3 then
+        local fh = http.get(v.."/"..info[2], nil, true)
         al = fh.readAll()
         fh.close()
-        fh = fs.open("/disk/1/right.dfpwm", "rb")
+        fh = http.get(v.."/"..info[3], nil, true)
         ar = fh.readAll()
         fh.close()
     end
-    local fh = fs.open("/disk/1/show.rtv", "rb")
+    local fh = http.get(v.."/"..info[1], nil, true)
     video = fh.readAll()
     fh.close()
     local vs = string.byte(video:sub(1, 1))
@@ -51,11 +54,11 @@ while true do
         tosend.mono = mono
         if mono then
             tosend.audioM = decoder(al:sub(6000 * (ac - 1) + 1, 6000 * ac))
-            speaker.playAudio(tosend.audioM)
+            speaker.playAudio(tosend.audioM, 0)
         else
             tosend.audioL = decoder(al:sub(6000 * (ac - 1) + 1, 6000 * ac))
             tosend.audioR = decoder(ar:sub(6000 * (ac - 1) + 1, 6000 * ac))
-            speaker.playAudio(tosend.audioL)
+            speaker.playAudio(tosend.audioL, 0)
         end
         modem.transmit(20000, 1, tosend)
         --print("Audio chunk "..ac.." sent")
@@ -80,7 +83,7 @@ while true do
         local time = os.epoch("utc")
         if prevT ~= 0 then
             local delay = time - prevT
-            print("Delay of "..delay.." millis between frames!")
+            --print("Delay of "..delay.." millis between frames!")
             if delay < lowest then lowest = delay end
             if delay > highest then highest = delay end
             sum = sum + delay
@@ -100,5 +103,11 @@ while true do
     print("Averege delay: "..sum / (frame - 1).." millis")
     print("Expected Average delay: "..1000 / fps.." millis")
     end)
-    disk.eject("left")
+    else
+        print("Bad reference table")
+        print(inf)
+        error()
+    end
+    end
+    end
 end
