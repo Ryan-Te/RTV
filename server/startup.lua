@@ -2,6 +2,7 @@
 local modem = peripheral.find("modem")
 local speaker = peripheral.find("speaker")
 local dfpwm = require("cc.audio.dfpwm")
+local channel = -1 --Edit This!!!
 local decoder = dfpwm.make_decoder()
 print("RTV Broadcaster")
 while true do
@@ -60,7 +61,7 @@ while true do
             tosend.audioR = decoder(ar:sub(6000 * (ac - 1) + 1, 6000 * ac))
             speaker.playAudio(tosend.audioL, 0)
         end
-        modem.transmit(20000, 1, tosend)
+        modem.transmit(20000 + channel, 1, tosend)
         --print("Audio chunk "..ac.." sent")
         ac = ac + 1
         if #al < 6000 * (ac - 1) + 1 then return end
@@ -79,7 +80,7 @@ while true do
         
         tosend.video = {vq, video:sub(frSi * (frame - 1) + 1, frSi * frame)}
         
-        modem.transmit(20000, 1, tosend)
+        modem.transmit(20000 + channel, 1, tosend)
         local time = os.epoch("utc")
         if prevT ~= 0 then
             local delay = time - prevT
